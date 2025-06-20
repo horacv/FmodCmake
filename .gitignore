@@ -1,0 +1,12 @@
+﻿.idea
+/build
+*cmake_install.cmake
+*Makefile
+*CMakeFiles
+*.cmake
+
+libs/fmod/**
+!libs/fmod/
+!libs/fmod/**/
+!libs/fmod/**/CMakeLists.txt
+!libs/fmod/**/readme.md
