@@ -4,7 +4,9 @@ Add the **inc** folder and platform specific subdirectories inside the **lib** f
 
 Example:
 
-- `lib/`
+- `studio/`
+  - `inc/`
+  - `lib/`
     - `x64/`
     - `x86/`
     - `apple/`

@@ -4,7 +4,7 @@ Create platform specific subdirectories inside this folder
 
 Example:
 
-- `lib/`
+- `plugins/`
     - `x64/`
     - `x86/`
     - `apple/`
