@@ -27,7 +27,10 @@ AudioEngine& AudioEngine::Get()
 
 bool AudioEngine::Initialize()
 {
-	if (System::create(&StudioSystem) != FMOD_OK) { return false; }
+	if (IsInitialized()) { return true; } // Already Initialized
+
+	AudioEngine& audioEngine = Get();
+	if (System::create(&audioEngine.StudioSystem) != FMOD_OK) { return false; }
 
 	constexpr int maxChannels = 256;
 	FMOD_STUDIO_INITFLAGS studio_init_flags = FMOD_STUDIO_INIT_NORMAL;
@@ -38,7 +41,7 @@ bool AudioEngine::Initialize()
 	init_flags = FMOD_INIT_NORMAL | FMOD_INIT_PROFILE_ENABLE | FMOD_INIT_MEMORY_TRACKING | FMOD_INIT_PROFILE_METER_ALL;
 #endif
 
-	if (StudioSystem->initialize(maxChannels,studio_init_flags, init_flags,nullptr) != FMOD_OK)
+	if (audioEngine.StudioSystem->initialize(maxChannels,studio_init_flags, init_flags,nullptr) != FMOD_OK)
 	{
 		return false;
 	}
@@ -46,13 +49,13 @@ bool AudioEngine::Initialize()
 	// ADDITIONAL PLUGINS
 	// Registering the resonance dynamic library as an additional plugin
 	// Add additional third-party libraries here
-	RegisterAdditionalPlugins({"resonanceaudio"}, "plugins/fmod");
+	audioEngine.RegisterAdditionalPlugins({"resonanceaudio"}, "plugins/fmod");
 
 	// MASTER AND STRINGS BANK
 	SetSoundBankRootDirectory("assets/soundbanks/" AUDIO_PLATFORM "/");
-	bIsMainBankLoaded = LoadSoundBank("Master.bank") && LoadSoundBank("Master.strings.bank");
+	audioEngine.bIsMainBankLoaded = LoadSoundBank("Master.bank") && LoadSoundBank("Master.strings.bank");
 
-	return StudioSystem->isValid() && bIsMainBankLoaded;
+	return audioEngine.StudioSystem->isValid() && audioEngine.bIsMainBankLoaded;
 }
 
 void AudioEngine::RegisterAdditionalPlugins(const std::vector<std::string>& pluginNames, const std::string& rootPath)
@@ -75,10 +78,11 @@ void AudioEngine::RegisterAdditionalPlugins(const std::vector<std::string>& plug
 
 void AudioEngine::Terminate()
 {
-	if (StudioSystem->isValid())
+	AudioEngine& audioEngine = Get();
+	if (audioEngine.StudioSystem->isValid())
 	{
-		StudioSystem->release();
-		StudioSystem = nullptr;
+		audioEngine.StudioSystem->release();
+		audioEngine.StudioSystem = nullptr;
 #if WIN32 // Refer to: https://www.fmod.com/docs/2.03/api/platforms-win.html#com
 		CoUninitialize();
 #endif
@@ -94,12 +98,13 @@ void AudioEngine::Update()
 bool AudioEngine::IsInitialized()
 {
 	const AudioEngine& audioEngine = Get();
-	return audioEngine.StudioSystem->isValid() && audioEngine.bIsMainBankLoaded;
+	return audioEngine.StudioSystem && audioEngine.StudioSystem->isValid() && audioEngine.bIsMainBankLoaded;
 }
 
 void AudioEngine::SetSoundBankRootDirectory(const std::string& directory)
 {
-	mSoundBankRootDirectory = directory;
+	AudioEngine& audioEngine = Get();
+	audioEngine.mSoundBankRootDirectory = directory;
 }
 
 bool AudioEngine::LoadSoundBank(const std::string& filePath)
@@ -116,7 +121,10 @@ bool AudioEngine::LoadSoundBank(const std::string& filePath)
 	return Result == FMOD_OK;
 }
 
-EventInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath, const bool autoStart, const bool autoRelease)
+EventInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath,
+	const Audio3DAttributes& audio3dAttributes,
+	const bool autoStart,
+	const bool autoRelease)
 {
 	if (!IsInitialized()) { return nullptr; }
 
@@ -125,6 +133,7 @@ EventInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath, const 
 
 	if (Get().StudioSystem->getEvent(studioPath.c_str(), &description) != FMOD_OK) { return nullptr; }
 	if (description->createInstance(&instance) != FMOD_OK) { return nullptr; }
+	instance->set3DAttributes(&audio3dAttributes);
 
 	if (autoStart)
 	{
@@ -136,4 +145,67 @@ EventInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath, const 
 	}
 
 	return instance;
+}
+
+bool AudioEngine::InstanceStart(EventInstance* audioInstance)
+{
+	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
+	return audioInstance->start() == FMOD_OK;
+}
+
+bool AudioEngine::InstanceStop(EventInstance* audioInstance, const bool bAllowFadeOut)
+{
+	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
+	return audioInstance->stop(bAllowFadeOut ? FMOD_STUDIO_STOP_ALLOWFADEOUT : FMOD_STUDIO_STOP_IMMEDIATE) == FMOD_OK;
+}
+
+bool AudioEngine::InstanceRelease(EventInstance* audioInstance)
+{
+	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
+	return audioInstance->release() == FMOD_OK;
+}
+
+bool AudioEngine::InstanceSetPaused(EventInstance* audioInstance, const bool bPaused)
+{
+	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
+	return audioInstance->setPaused(bPaused) == FMOD_OK;
+}
+
+bool AudioEngine::InstanceIsPaused(const EventInstance* audioInstance, bool& outPaused)
+{
+	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
+	return audioInstance->getPaused(&outPaused) == FMOD_OK;
+}
+
+bool AudioEngine::SetGlobalParameterByName(const std::string& name,
+			const float value, const bool bIgnoreSeekSpeed)
+{
+	if (!IsInitialized()) { return false; }
+	const FMOD_RESULT result = Get().StudioSystem->setParameterByName(name.c_str(), value, bIgnoreSeekSpeed);
+	return result == FMOD_OK;
+}
+
+bool AudioEngine::SetGlobalParameterByNameWithLabel(const std::string& name,
+	const std::string& label, const bool bIgnoreSeekSpeed)
+{
+	if (!IsInitialized()) { return false; }
+	const FMOD_RESULT result = Get().StudioSystem->setParameterByNameWithLabel(name.c_str(), label.c_str(), bIgnoreSeekSpeed);
+	return result == FMOD_OK;
+}
+
+bool AudioEngine::SetParameterByNameWithLabel(EventInstance* audioInstance,
+			const std::string& name, const std::string& label, const bool bIgnoreSeekSpeed)
+{
+	if (!(audioInstance && audioInstance->isValid() && IsInitialized())) { return false; }
+	const FMOD_RESULT result = audioInstance->setParameterByNameWithLabel(name.c_str(), label.c_str(), bIgnoreSeekSpeed);
+	return result == FMOD_OK;
+}
+
+bool AudioEngine::SetParameterByName(EventInstance* audioInstance,
+			const std::string& name, const float value, const bool bIgnoreSeekSpeed)
+{
+	if (!(audioInstance && audioInstance->isValid() && IsInitialized())) { return false; }
+
+	const FMOD_RESULT result = audioInstance->setParameterByName(name.c_str(), value, bIgnoreSeekSpeed);
+	return result == FMOD_OK;
 }

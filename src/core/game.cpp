@@ -12,7 +12,8 @@ Game::Game()
 
 void Game::Initialize()
 {
-	AudioEngine::Get().Initialize(); // AUDIO ENGINE INIT
+	AudioEngine::Initialize(); // AUDIO ENGINE INIT
+	AudioEngine::Initialize();
 
 	SetTargetFPS(60);
 	InitWindow(static_cast<int>(mWindowWidth), static_cast<int>(mWindowHeight), "FMOD is Alive!");
@@ -36,7 +37,7 @@ void Game::Terminate() const
 {
 	CloseWindow();
 
-	AudioEngine::Get().Terminate(); // AUDIO ENGINE TERM
+	AudioEngine::Terminate(); // AUDIO ENGINE TERM
 
 	std::cout << "Game destroyed" << std::endl;
 }
