@@ -53,7 +53,7 @@ bool AudioEngine::Initialize()
 
 	// MASTER AND STRINGS BANK
 	SetSoundBankRootDirectory("assets/soundbanks/" AUDIO_PLATFORM "/");
-	audioEngine.bIsMainBankLoaded = LoadSoundBank("Master.bank") && LoadSoundBank("Master.strings.bank");
+	audioEngine.bIsMainBankLoaded = LoadSoundBankFile("Master.bank") && LoadSoundBankFile("Master.strings.bank");
 
 	return audioEngine.StudioSystem->isValid() && audioEngine.bIsMainBankLoaded;
 }
@@ -103,33 +103,53 @@ bool AudioEngine::IsInitialized()
 
 void AudioEngine::SetSoundBankRootDirectory(const std::string& directory)
 {
-	AudioEngine& audioEngine = Get();
-	audioEngine.mSoundBankRootDirectory = directory;
+	Get().mSoundBankRootDirectory = directory;
 }
 
-bool AudioEngine::LoadSoundBank(const std::string& filePath)
+bool AudioEngine::LoadSoundBankFile(const std::string& filePath)
+{
+	AudioBank* bank;
+	return LoadSoundBankFile(filePath, bank);
+}
+
+bool AudioEngine::LoadSoundBankFile(const std::string& filePath, AudioBank*& outBankPtr)
 {
 	const AudioEngine& audioEngine = Get();
 	if (!audioEngine.StudioSystem->isValid()) { return false; }
 
 	const std::string fullBankPath = audioEngine.mSoundBankRootDirectory + filePath;
 
-	FMOD::Studio::Bank* Bank = nullptr;
-	const FMOD_RESULT Result = audioEngine.StudioSystem->loadBankFile(fullBankPath.c_str(),
-		FMOD_STUDIO_LOAD_BANK_NORMAL, &Bank);
-
-	return Result == FMOD_OK;
+	return audioEngine.StudioSystem->loadBankFile(fullBankPath.c_str(),
+		FMOD_STUDIO_LOAD_BANK_NORMAL, &outBankPtr) == FMOD_OK;
 }
 
-EventInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath,
-	const Audio3DAttributes& audio3dAttributes,
-	const bool autoStart,
-	const bool autoRelease)
+bool AudioEngine::UnloadSoundBank(const std::string& studioPath)
+{
+	const AudioEngine& audioEngine = Get();
+	if (!audioEngine.StudioSystem->isValid()) { return false; }
+
+	FMOD::Studio::Bank* bank = nullptr;
+	if (audioEngine.StudioSystem->getBank(studioPath.c_str(), &bank) == FMOD_OK)
+	{
+		return UnloadSoundBank(bank);
+	}
+
+	return false;
+}
+
+bool AudioEngine::UnloadSoundBank(AudioBank* bank)
+{
+	if (!(Get().StudioSystem->isValid() && bank)) { return false; }
+	return bank->unload() == FMOD_OK;
+}
+
+AudioInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath,
+	const Audio3DAttributes& audio3dAttributes, const bool autoStart,const bool autoRelease)
 {
 	if (!IsInitialized()) { return nullptr; }
 
 	FMOD::Studio::EventDescription* description = nullptr;
-	EventInstance* instance = nullptr;
+	AudioInstance* instance = nullptr;
 
 	if (Get().StudioSystem->getEvent(studioPath.c_str(), &description) != FMOD_OK) { return nullptr; }
 	if (description->createInstance(&instance) != FMOD_OK) { return nullptr; }
@@ -147,34 +167,34 @@ EventInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath,
 	return instance;
 }
 
-bool AudioEngine::InstanceStart(EventInstance* audioInstance)
+bool AudioEngine::InstanceStart(AudioInstance* instance)
 {
-	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
-	return audioInstance->start() == FMOD_OK;
+	if (!(IsInitialized() && instance && instance->isValid())) { return false; }
+	return instance->start() == FMOD_OK;
 }
 
-bool AudioEngine::InstanceStop(EventInstance* audioInstance, const bool bAllowFadeOut)
+bool AudioEngine::InstanceStop(AudioInstance* instance, const bool bAllowFadeOut)
 {
-	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
-	return audioInstance->stop(bAllowFadeOut ? FMOD_STUDIO_STOP_ALLOWFADEOUT : FMOD_STUDIO_STOP_IMMEDIATE) == FMOD_OK;
+	if (!(IsInitialized() && instance && instance->isValid())) { return false; }
+	return instance->stop(bAllowFadeOut ? FMOD_STUDIO_STOP_ALLOWFADEOUT : FMOD_STUDIO_STOP_IMMEDIATE) == FMOD_OK;
 }
 
-bool AudioEngine::InstanceRelease(EventInstance* audioInstance)
+bool AudioEngine::InstanceRelease(AudioInstance* instance)
 {
-	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
-	return audioInstance->release() == FMOD_OK;
+	if (!(IsInitialized() && instance && instance->isValid())) { return false; }
+	return instance->release() == FMOD_OK;
 }
 
-bool AudioEngine::InstanceSetPaused(EventInstance* audioInstance, const bool bPaused)
+bool AudioEngine::InstanceSetPaused(AudioInstance* instance, const bool bPaused)
 {
-	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
-	return audioInstance->setPaused(bPaused) == FMOD_OK;
+	if (!(IsInitialized() && instance && instance->isValid())) { return false; }
+	return instance->setPaused(bPaused) == FMOD_OK;
 }
 
-bool AudioEngine::InstanceIsPaused(const EventInstance* audioInstance, bool& outPaused)
+bool AudioEngine::InstanceIsPaused(const AudioInstance* instance, bool& outPaused)
 {
-	if (!(IsInitialized() && audioInstance && audioInstance->isValid())) { return false; }
-	return audioInstance->getPaused(&outPaused) == FMOD_OK;
+	if (!(IsInitialized() && instance && instance->isValid())) { return false; }
+	return instance->getPaused(&outPaused) == FMOD_OK;
 }
 
 bool AudioEngine::SetGlobalParameterByName(const std::string& name,
@@ -193,19 +213,19 @@ bool AudioEngine::SetGlobalParameterByNameWithLabel(const std::string& name,
 	return result == FMOD_OK;
 }
 
-bool AudioEngine::SetParameterByNameWithLabel(EventInstance* audioInstance,
+bool AudioEngine::SetParameterByNameWithLabel(AudioInstance* instance,
 			const std::string& name, const std::string& label, const bool bIgnoreSeekSpeed)
 {
-	if (!(audioInstance && audioInstance->isValid() && IsInitialized())) { return false; }
-	const FMOD_RESULT result = audioInstance->setParameterByNameWithLabel(name.c_str(), label.c_str(), bIgnoreSeekSpeed);
+	if (!(instance && instance->isValid() && IsInitialized())) { return false; }
+	const FMOD_RESULT result = instance->setParameterByNameWithLabel(name.c_str(), label.c_str(), bIgnoreSeekSpeed);
 	return result == FMOD_OK;
 }
 
-bool AudioEngine::SetParameterByName(EventInstance* audioInstance,
+bool AudioEngine::SetParameterByName(AudioInstance* instance,
 			const std::string& name, const float value, const bool bIgnoreSeekSpeed)
 {
-	if (!(audioInstance && audioInstance->isValid() && IsInitialized())) { return false; }
+	if (!(instance && instance->isValid() && IsInitialized())) { return false; }
 
-	const FMOD_RESULT result = audioInstance->setParameterByName(name.c_str(), value, bIgnoreSeekSpeed);
+	const FMOD_RESULT result = instance->setParameterByName(name.c_str(), value, bIgnoreSeekSpeed);
 	return result == FMOD_OK;
 }

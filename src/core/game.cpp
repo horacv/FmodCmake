@@ -62,7 +62,7 @@ void Game::ProcessInput()
 
 void Game::Start()
 {
-	AudioEngine::LoadSoundBank("Music.bank");
+	AudioEngine::LoadSoundBankFile("Music.bank");
 	AudioEngine::PlayAudioEvent("event:/MusicTest");
 
 	std::cout << "Game Started" << std::endl;
