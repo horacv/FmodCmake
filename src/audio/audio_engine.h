@@ -12,6 +12,8 @@ using System = FMOD::Studio::System;
 using AudioInstance = FMOD::Studio::EventInstance;
 using Audio3DAttributes = FMOD_3D_ATTRIBUTES;
 using AudioBank = FMOD::Studio::Bank;
+using AudioEventCallback = FMOD_STUDIO_EVENT_CALLBACK;
+using AudioCallbackType = FMOD_STUDIO_EVENT_CALLBACK_TYPE;
 
 class AudioEngine
 {
@@ -37,6 +39,9 @@ class AudioEngine
 
 		static AudioInstance* PlayAudioEvent(const std::string& studioPath,
 			const Audio3DAttributes& audio3dAttributes = Audio3DAttributes(),
+			void* userData = nullptr,
+			AudioEventCallback callback = nullptr,
+			AudioCallbackType callbackType = FMOD_STUDIO_EVENT_CALLBACK_ALL,
 			bool autoStart = true,
 			bool autoRelease = true);
 

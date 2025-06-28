@@ -1,5 +1,7 @@
 #include "audio_engine.h"
 
+#include <iostream>
+#include <ostream>
 #include <vector>
 
 #if WIN32
@@ -143,8 +145,8 @@ bool AudioEngine::UnloadSoundBank(AudioBank* bank)
 	return bank->unload() == FMOD_OK;
 }
 
-AudioInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath,
-	const Audio3DAttributes& audio3dAttributes, const bool autoStart,const bool autoRelease)
+AudioInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath, const Audio3DAttributes& audio3dAttributes,
+	void* userData, const AudioEventCallback callback, const AudioCallbackType callbackType, const bool autoStart, const bool autoRelease)
 {
 	if (!IsInitialized()) { return nullptr; }
 
@@ -153,7 +155,18 @@ AudioInstance* AudioEngine::PlayAudioEvent(const std::string& studioPath,
 
 	if (Get().StudioSystem->getEvent(studioPath.c_str(), &description) != FMOD_OK) { return nullptr; }
 	if (description->createInstance(&instance) != FMOD_OK) { return nullptr; }
+
 	instance->set3DAttributes(&audio3dAttributes);
+
+	if (callback)
+	{
+		instance->setCallback(callback, callbackType);
+	}
+
+	if (userData)
+	{
+		instance->setUserData(userData);
+	}
 
 	if (autoStart)
 	{
