@@ -18,28 +18,46 @@ add_library(fmod_core SHARED IMPORTED GLOBAL "${FMOD_CORE_INCLUDE_PATH}/fmod.hpp
 add_library(fmod_studio SHARED IMPORTED GLOBAL "${FMOD_STUDIO_INCLUDE_PATH}/fmod_studio.hpp")
 
 ###
-## 3 - Set the location of the dynamic libraries
+## 3 - Set the Logging libraries for the Debug config
+###
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(FMOD_LIB_NAME "fmodL")
+    set(FMOD_STUDIO_LIB_NAME "fmodstudioL")
+else()
+    set(FMOD_LIB_NAME "fmod")
+    set(FMOD_STUDIO_LIB_NAME "fmodstudio")
+endif()
+
+###
+## 4 - Set the location of the dynamic libraries
 ###
 
 # Define the path of the dynamic libraries for each platform
 # Add more target platforms here with an elseif ()
 if (WIN32 AND MSVC)
-    set_property(TARGET fmod_core PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/x64/fmod.dll")
-    set_property(TARGET fmod_core PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/x64/fmod_vc.lib")
-    set_property(TARGET fmod_studio PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/x64/fmodstudio.dll")
-    set_property(TARGET fmod_studio PROPERTY IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/x64/fmodstudio_vc.lib")
+    set_property(TARGET fmod_core PROPERTY IMPORTED_LOCATION
+            "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/x64/${FMOD_LIB_NAME}.dll")
+    set_property(TARGET fmod_core PROPERTY IMPORTED_IMPLIB
+            "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/x64/${FMOD_LIB_NAME}_vc.lib")
+    set_property(TARGET fmod_studio PROPERTY IMPORTED_LOCATION
+            "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/x64/${FMOD_STUDIO_LIB_NAME}.dll")
+    set_property(TARGET fmod_studio PROPERTY IMPORTED_IMPLIB
+            "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/x64/${FMOD_STUDIO_LIB_NAME}_vc.lib")
     set(FMOD_PLUGINS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/plugins/x64")
     target_compile_definitions(fmod_studio INTERFACE "AUDIO_PLATFORM=\"Desktop\"")
 
 elseif (APPLE)
-    set_property(TARGET fmod_core PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/apple/libfmod.dylib")
-    set_property(TARGET fmod_studio PROPERTY IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/apple/libfmodstudio.dylib")
+    set_property(TARGET fmod_core PROPERTY IMPORTED_LOCATION
+            "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/apple/${FMOD_LIB_NAME}.dylib")
+    set_property(TARGET fmod_studio PROPERTY IMPORTED_LOCATION
+            "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/apple/${FMOD_STUDIO_LIB_NAME}.dylib")
     set(FMOD_PLUGINS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/plugins/apple")
     target_compile_definitions(fmod_studio INTERFACE "AUDIO_PLATFORM=\"Desktop\"")
 endif ()
 
 ###
-## 4 - Find and install all the FMOD additional dlls to the build folder (ex. google resonance or custom plugins)
+## 5 - Find and install all the FMOD additional dlls to the build folder (ex. google resonance or custom plugins)
 ###
 
 file(GLOB FMOD_PLUGINS "${FMOD_PLUGINS_PATH}/*${CMAKE_SHARED_LIBRARY_SUFFIX}")

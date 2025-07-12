@@ -7,7 +7,10 @@
 #include <string>
 #include <unordered_map>
 
-using System = FMOD::Studio::System;
+#include "audio_config.h"
+
+using StudioSystem = FMOD::Studio::System;
+using CoreSystem = FMOD::System;
 
 using AudioInstance = FMOD::Studio::EventInstance;
 using Audio3DAttributes = FMOD_3D_ATTRIBUTES;
@@ -66,13 +69,18 @@ class AudioEngine
 
 	private:
 		static std::unique_ptr<AudioEngine> sInstance;
-		System* StudioSystem;
-		bool bIsMainBankLoaded;
+		StudioSystem* StudioSystem;
+		bool bMainBanksLoaded;
 		std::string mSoundBankRootDirectory;
 		std::unordered_map<std::string, uint32_t> additionalPluginHandles;
 
 		AudioEngine();
 		void RegisterAdditionalPlugins(const std::vector<std::string>& pluginNames, const std::string& rootPath);
+
+		// Logging
+		static FMOD_RESULT F_CALL AudioEngineLogCallback(FMOD_DEBUG_FLAGS flags,
+			const char* file, int line, const char* func, const char* message);
+
 };
 
 #endif

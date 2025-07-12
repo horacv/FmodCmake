@@ -12,12 +12,14 @@ This project showcases a basic integration between FMOD and raylib, featuring:
 - FMOD audio engine integration
 - Background music playback by playing an audio event from a soundbank
 - A basic audio engine class to interface between FMOD and the rest of the codebase
+- A .ini config file and a simple config parser to handle audio initialization
 
 ## Prerequisites
 
 - CMake 3.x or higher
 - FMOD Studio and FMOD Core API
 - raylib development libraries (included)
+- C++20 compatible compiler.
 
 ## Building the Project
 
@@ -40,6 +42,7 @@ Note that some IDEs can configure and build your project without using the comma
 - `CMakeLists.txt` - Main CMake configuration file
 - `assets/` - Contains soundbanks and general assets
   - `soundbanks/` - Master.bank, Master.strings.bank and Music.bank
+- `config/` - Contains a configuration file for the audio engine
 - `libs/` - Contains all "third-party" libraries for the project
   - `raylib/`
     - `include` - raylib header files
