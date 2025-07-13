@@ -49,9 +49,9 @@ if (WIN32 AND MSVC)
 
 elseif (APPLE)
     set_property(TARGET fmod_core PROPERTY IMPORTED_LOCATION
-            "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/apple/${FMOD_LIB_NAME}.dylib")
+            "${CMAKE_CURRENT_SOURCE_DIR}/core/lib/apple/lib${FMOD_LIB_NAME}.dylib")
     set_property(TARGET fmod_studio PROPERTY IMPORTED_LOCATION
-            "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/apple/${FMOD_STUDIO_LIB_NAME}.dylib")
+            "${CMAKE_CURRENT_SOURCE_DIR}/studio/lib/apple/lib${FMOD_STUDIO_LIB_NAME}.dylib")
     set(FMOD_PLUGINS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/plugins/apple")
     target_compile_definitions(fmod_studio INTERFACE "AUDIO_PLATFORM=\"Desktop\"")
 endif ()

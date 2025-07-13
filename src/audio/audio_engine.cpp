@@ -75,11 +75,12 @@ bool AudioEngine::Initialize()
 	if (config.GetBool("System", "EnableMemoryTracking")) { studio_init_flags |= FMOD_STUDIO_INIT_MEMORY_TRACKING; }
 #endif
 
+#ifndef NDEBUG // Logging only available in the Debug config (fmodstudioL and fmodL dynamic libs)
 	std::unordered_map<std::string, FMOD_DEBUG_FLAGS> loggingLevels{
-		{"None", FMOD_DEBUG_LEVEL_NONE},
-		{"Log", FMOD_DEBUG_LEVEL_LOG},
-		{"Warning", FMOD_DEBUG_LEVEL_WARNING},
-		{"Error", FMOD_DEBUG_LEVEL_ERROR}
+			{"None", FMOD_DEBUG_LEVEL_NONE},
+			{"Log", FMOD_DEBUG_LEVEL_LOG},
+			{"Warning", FMOD_DEBUG_LEVEL_WARNING},
+			{"Error", FMOD_DEBUG_LEVEL_ERROR}
 	};
 
 	FMOD_DEBUG_FLAGS loggingLevel = FMOD_DEBUG_LEVEL_NONE;
@@ -88,7 +89,6 @@ bool AudioEngine::Initialize()
 		if (it != loggingLevels.end()) { loggingLevel = it->second; }
 	}
 
-#ifndef NDEBUG // Logging only available in the Debug config (fmodstudioL and fmodL dynamic libs)
 	FMOD::Debug_Initialize(loggingLevel, FMOD_DEBUG_MODE_CALLBACK, AudioEngineLogCallback);
 #endif
 
